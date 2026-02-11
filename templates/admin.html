@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Administration</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .form-add { background: #eee; padding: 20px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Tableau de Bord Administrateur</h1>
+    <a href="/">Déconnexion</a>
+
+    <div class="form-add">
+        <h3>Ajouter un étudiant</h3>
+        <form action="/ajouter_etudiant" method="POST">
+            <input type="text" name="nom" placeholder="Nom" required>
+            <input type="text" name="prenom" placeholder="Prénom" required>
+            <input type="number" name="age" placeholder="Âge" required>
+            <button type="submit">Ajouter</button>
+        </form>
+    </div>
+
+    <h3>Liste des Étudiants</h3>
+    <table>
+        <tr>
+            <th>ID (Généré)</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Âge</th>
+            <th>Dernière arrivée</th>
+            <th>Action</th>
+            <th>QR Code</th>
+        </tr>
+        {% for etu in etudiants %}
+        <tr>
+            <td>{{ etu['id_unique'] }}</td>
+            <td>{{ etu['nom'] }}</td>
+            <td>{{ etu['prenom'] }}</td>
+            <td>{{ etu['age'] }}</td>
+            <td>{{ etu['heure_arrivee'] }}</td>
+            <td><a href="/supprimer_etudiant/{{ etu['id_unique'] }}" style="color:red;">Supprimer</a></td>
+            <td><a href="/generate_qr/{{ etu['id_unique'] }}" target="_blank">Voir QR</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

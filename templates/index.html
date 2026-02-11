@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Portail École</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background-color: #f4f4f4; }
+        .container { display: flex; justify-content: center; gap: 50px; margin-top: 100px; }
+        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; margin: 10px 0; width: 90%; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; }
+        .alert { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Système d'Identification Étudiant</h1>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}<p class="alert">{{ messages[0] }}</p>{% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <!-- Login Administrateur -->
+        <div class="box">
+            <h2>Espace Administrateur</h2>
+            <form action="/admin_login" method="POST">
+                <input type="text" name="identifiant" placeholder="Entrer ID Admin (admin)" required>
+                <br>
+                <button type="submit">Connexion Admin</button>
+            </form>
+        </div>
+
+        <!-- Login Surveillant -->
+        <div class="box">
+            <h2>Espace Surveillant</h2>
+            <form action="/surveillant_login" method="POST">
+                <input type="text" name="identifiant" placeholder="Identifiant (surv)" required>
+                <input type="password" name="password" placeholder="Mot de passe (1234)" required>
+                <br>
+                <button type="submit" style="background: #28a745;">Connexion Surveillant</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
