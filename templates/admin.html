@@ -4,29 +4,51 @@
     <title>Administration</title>
     <style>
         body { font-family: sans-serif; padding: 20px; }
+        .alert { padding: 8px; margin: 10px 0; border-radius: 4px; }
+        .alert.success { background: #d4edda; color: #155724; }
+        .alert.warning { background: #fff3cd; color: #856404; }
+        .alert.danger { background: #f8d7da; color: #721c24; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: middle; }
         th { background-color: #007bff; color: white; }
-        .form-add { background: #eee; padding: 20px; margin-bottom: 20px; }
+        .form-add { background: #eee; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        input[type="text"], input[type="number"], input[type="file"] {
+            display: block; width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box;
+        }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #218838; }
+        img.photo-mini { width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #007bff; }
+        .no-photo { color: #777; font-style: italic; }
     </style>
 </head>
 <body>
     <h1>Tableau de Bord Administrateur</h1>
-    <a href="/">Déconnexion</a>
+    <a href="/logout">← Déconnexion</a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <p class="alert {{ category }}">{{ msg }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <div class="form-add">
         <h3>Ajouter un étudiant</h3>
-        <form action="/ajouter_etudiant" method="POST">
+        <form action="/ajouter_etudiant" method="POST" enctype="multipart/form-data">
             <input type="text" name="nom" placeholder="Nom" required>
             <input type="text" name="prenom" placeholder="Prénom" required>
-            <input type="number" name="age" placeholder="Âge" required>
-            <button type="submit">Ajouter</button>
+            <input type="number" name="age" placeholder="Âge" required min="10" max="30">
+            <input type="file" name="photo" accept="image/jpeg,image/png,image/gif">
+            <small style="color:#555; display:block; margin-top:4px;">Photo (optionnelle – jpg, png, gif – max 4 Mo)</small>
+            <button type="submit">Ajouter l'étudiant</button>
         </form>
     </div>
 
     <h3>Liste des Étudiants</h3>
     <table>
         <tr>
+            <th>Photo</th>
             <th>ID (Généré)</th>
             <th>Nom</th>
             <th>Prénom</th>
@@ -37,13 +59,25 @@
         </tr>
         {% for etu in etudiants %}
         <tr>
+            <td style="text-align:center;">
+                {% if etu['photo'] %}
+                    <img src="{{ url_for('static', filename='photos_etudiants/' + etu['photo']) }}"
+                         alt="Photo de {{ etu['prenom'] }}" class="photo-mini">
+                {% else %}
+                    <span class="no-photo">Pas de photo</span>
+                {% endif %}
+            </td>
             <td>{{ etu['id_unique'] }}</td>
             <td>{{ etu['nom'] }}</td>
             <td>{{ etu['prenom'] }}</td>
             <td>{{ etu['age'] }}</td>
             <td>{{ etu['heure_arrivee'] }}</td>
             <td><a href="/supprimer_etudiant/{{ etu['id_unique'] }}" style="color:red;">Supprimer</a></td>
-            <td><a href="/generate_qr/{{ etu['id_unique'] }}" target="_blank">Voir QR</a></td>
+            <td style="text-align:center;">
+                <a href="{{ url_for('generate_qr', id_unique=etu['id_unique']) }}" target="_blank">
+                    <img src="{{ url_for('generate_qr', id_unique=etu['id_unique']) }}" width="60" height="60" alt="QR {{ etu['id_unique'] }}">
+                </a>
+            </td>
         </tr>
         {% endfor %}
     </table>

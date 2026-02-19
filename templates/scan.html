@@ -4,39 +4,21 @@
     <title>Scanner d'arrivée</title>
     <meta charset="UTF-8">
     <style>
-        body { 
-            font-family: sans-serif; 
-            text-align: center; 
-            padding: 40px 20px; 
-            background: #f8f9fa;
-        }
+        body { font-family: sans-serif; text-align: center; padding: 40px 20px; background: #f8f9fa; }
         h1 { margin-bottom: 30px; }
         .container { max-width: 600px; margin: 0 auto; }
-        input { 
-            padding: 15px; 
-            font-size: 20px; 
-            width: 300px; 
-            text-align: center; 
-            margin: 10px;
-        }
-        button { 
-            padding: 12px 24px; 
-            font-size: 16px; 
-            cursor: pointer; 
-        }
-        .result-box { 
-            margin: 30px auto; 
-            border: 2px solid #333; 
-            padding: 25px; 
-            display: inline-block; 
-            background: #e9ecef; 
-            border-radius: 8px;
-            min-width: 350px;
-        }
+        input { padding: 15px; font-size: 20px; width: 300px; text-align: center; margin: 10px; }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; }
+        .alert { padding: 8px; margin: 10px 0; border-radius: 4px; }
+        .alert.success { background: #d4edda; color: #155724; }
+        .alert.error { background: #f8d7da; color: #721c24; }
+        .result-box { margin: 30px auto; border: 2px solid #333; padding: 25px; display: inline-block; background: #e9ecef; border-radius: 8px; min-width: 350px; }
         .success { color: #28a745; font-size: 22px; font-weight: bold; }
         .error   { color: #dc3545; font-size: 18px; }
         #result  { min-height: 80px; line-height: 1.6; font-size: 1.2em; }
         a { display: inline-block; margin: 10px 0; color: #007bff; }
+        .student-photo { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 3px solid #007bff; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .no-photo { color: #777; font-style: italic; margin-bottom: 15px; }
     </style>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -44,73 +26,94 @@
 
     <div class="container">
         <h1>Scanner d'arrivée</h1>
-        <a href="/">← Déconnexion</a>
+        <a href="/logout">← Déconnexion</a>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <p class="alert {{ category }}">{{ msg }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
         <h3>Méthode 1 — Scanner avec la webcam</h3>
         <div style="max-width: 500px; margin: 20px auto;">
             <div id="reader" style="width:100%; border: 2px solid #444; border-radius: 8px; overflow: hidden;"></div>
-            <div id="result"></div>
             <button id="stopBtn">Arrêter la caméra</button>
         </div>
 
         <h3 style="margin-top: 50px;">Méthode 2 — Saisie manuelle ou douchette</h3>
-        <form action="/process_scan" method="POST">
-            <input type="number" name="qr_code" placeholder="Scanner / taper l'ID ici..." required autocomplete="off">
+        <form id="manualForm">
+            <input type="number" id="manualInput" name="qr_code" placeholder="Scanner / taper l'ID ici..." required autocomplete="off">
             <button type="submit">Valider</button>
         </form>
 
-        <!-- Messages et résultat -->
-        {% if message %}
-            <p class="success">{{ message }}</p>
-        {% endif %}
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+        <!-- zone d'affichage contrôlée par JavaScript -->
+        <div id="result"></div>
+        <div id="studentInfo"></div>
 
-        {% if etudiant %}
-        <div class="result-box">
-            <h2>Informations Étudiant</h2>
-            <p><strong>ID :</strong> {{ etudiant['id_unique'] }}</p>
-            <p><strong>Nom :</strong> {{ etudiant['nom'] }}</p>
-            <p><strong>Prénom :</strong> {{ etudiant['prenom'] }}</p>
-            <p><strong>Âge :</strong> {{ etudiant['age'] }}</p>
-            <p><strong>Heure d'arrivée :</strong> {{ etudiant['heure_arrivee'] }}</p>
-        </div>
-        {% endif %}
-
-        <!-- Script de gestion de la caméra -->
         <script>
             let html5QrCode;
+            const STATIC_URL = "{{ url_for('static', filename='') }}";  // se termine par '/'
 
-            function onScanSuccess(decodedText, decodedResult) {
-                document.getElementById('result').innerHTML = 
-                    `Code détecté : <strong>${decodedText}</strong>`;
+            function displayStudent(info) {
+                const container = document.getElementById('studentInfo');
+                if (!info || !info.student) {
+                    container.innerHTML = '';
+                    return;
+                }
+                const etu = info.student;
+                let photoHtml = '';
+                if (etu.photo) {
+                    photoHtml = `<img src="${STATIC_URL}photos_etudiants/${etu.photo}" class="student-photo" alt="Photo">`;
+                } else {
+                    photoHtml = '<p class="no-photo">Aucune photo disponible</p>';
+                }
+                container.innerHTML = `
+                    <div class="result-box">
+                        <h2>Informations Étudiant</h2>
+                        <div style="text-align:center;margin-bottom:20px;">
+                            ${photoHtml}
+                        </div>
+                        <p><strong>ID :</strong> ${etu.id_unique}</p>
+                        <p><strong>Nom :</strong> ${etu.nom}</p>
+                        <p><strong>Prénom :</strong> ${etu.prenom}</p>
+                        <p><strong>Âge :</strong> ${etu.age}</p>
+                        <p><strong>Heure d'arrivée :</strong> ${etu.heure_arrivee}</p>
+                    </div>
+                `;
+            }
 
+            function showMessage(msg, type = 'success') {
+                document.getElementById('result').innerHTML = `<span class="${type}">${msg}</span>`;
+            }
+
+            function sendScan(id) {
                 fetch('/valider_scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: decodedText })
+                    body: JSON.stringify({ id: id })
                 })
-                .then(response => response.json())
+                .then(r => r.json().catch(() => ({success:false,error:'Mauvaise réponse'})))
                 .then(data => {
                     if (data.success) {
-                        document.getElementById('result').innerHTML += 
-                            `<br><span class="success">Présence enregistrée à ${data.heure}</span>`;
-                        
-                        // Option : recharger la page pour afficher le bloc étudiant
-                        // setTimeout(() => location.reload(), 1800);
+                        showMessage('Arrivée enregistrée !', 'success');
+                        displayStudent(data);
                     } else {
-                        document.getElementById('result').innerHTML += 
-                            `<br><span class="error">${data.message}</span>`;
+                        showMessage(data.error || 'Erreur inconnue', 'error');
+                        displayStudent(null);
                     }
                 })
                 .catch(err => {
-                    document.getElementById('result').innerHTML += 
-                        `<br><span class="error">Erreur : ${err.message || err}</span>`;
+                    showMessage(err.message || 'Erreur réseau', 'error');
+                    displayStudent(null);
                 });
             }
 
-            // Démarrer la caméra
+            function onScanSuccess(decodedText, decodedResult) {
+                sendScan(decodedText);
+            }
+
             html5QrCode = new Html5Qrcode("reader");
             const config = { fps: 10, qrbox: { width: 280, height: 280 } };
 
@@ -118,19 +121,23 @@
                 { facingMode: "environment" },
                 config,
                 onScanSuccess,
-                () => {} // erreur silencieuse
+                () => {}
             ).catch(err => {
-                document.getElementById('result').innerHTML = 
-                    `<span class="error">Impossible d’accéder à la caméra : ${err}</span>`;
+                showMessage('Caméra inaccessible : ' + err, 'error');
             });
 
-            // Arrêt de la caméra
             document.getElementById('stopBtn').addEventListener('click', () => {
                 if (html5QrCode) {
                     html5QrCode.stop().then(() => {
-                        document.getElementById('result').innerHTML += "<br><em>Caméra arrêtée.</em>";
+                        document.getElementById('result').innerHTML += "<br><em>Caméra arrêtée</em>";
                     });
                 }
+            });
+
+            document.getElementById('manualForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const id = document.getElementById('manualInput').value.trim();
+                if (id) sendScan(id);
             });
         </script>
     </div>
